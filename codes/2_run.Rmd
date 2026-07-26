@@ -113,6 +113,17 @@ for (n in params$n_neighbour) {
         fn_hits_per_tips <- file.path(currentdir, paste0("prop_", level, "_", n, "neighbours.tsv"))
         data.table::fwrite(df_hits_per_tips, file=fn_hits_per_tips, sep="\t", quote=F)
 
+        # calculate Shannon's entropy
+        df_entropy <- df_hits_per_tips %>%
+                        group_by(tips) %>%
+                        mutate(prop_total=sum(prop_locus), prop_locus=prop_locus/prop_total) %>%
+                        group_by(tips) %>%
+                        summarise("eff_{{level}}" = exp(-sum(prop_locus * log(prop_locus))))
+
+        # save data.frame
+        fn_eff_per_tips <- file.path(currentdir, paste0("eff_", level, "_", n, "neighbours.tsv"))
+        data.table::fwrite(df_entropy, file=fn_eff_per_tips, sep="\t", quote=F)
+
         # extract data.frame
         df_best_hit_per_tips <- df_hits_per_tips %>% group_by(tips) %>% slice_max(prop_locus)
 
