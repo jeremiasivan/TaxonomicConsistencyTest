@@ -1,0 +1,135 @@
+---
+title: "Taxonomic Consistency Test"
+---
+
+```{r, include=FALSE}
+# output directories
+dir_allhits <- file.path(currentdir, "allhits")
+if (!dir.exists(dir_allhits)) {
+    dir.create(dir_allhits, recursive=T)
+}
+
+# open metadata file
+df_metadata <- data.table::fread(params$file_taxonomy_metadata)
+
+# extract list of trees
+ls_trees <- list.files(params$dir_locus_tree, recursive=F, full.names=F)
+if (length(ls_trees)<1) {
+    log4r::error(fn_logger, "Error: list of locus trees is of length zero. Exited.")
+    knitr::knit_exit()
+}
+
+# open list of tips
+ls_tips_check <- c()
+if (file.exists(params$file_list_tips) & params$file_list_tips!="") {
+    ls_tips_check <- readLines(params$file_list_tips)
+
+    if (length(ls_tips_check)<1) {
+        log4r::error(fn_logger, "Error: list of tips is of length zero. Exited.")
+        knitr::knit_exit()
+    }
+}
+
+# output files
+fn_prefix_output <- file.path(dir_allhits, params$prefix)
+```
+
+```{r taxonomic-consistency}
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
+# iterate over locus trees
+df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_closest_group") %dopar% {
+    require(dplyr)
+
+    # extract locus name
+    locus <- tools::file_path_sans_ext(basename(fn_tree))
+
+    # open treefile
+    tre <- ape::read.tree(file.path(params$dir_locus_tree, fn_tree))
+    if (length(ls_tips_check)<1) {
+        ls_tips_check <- tre$tip.label
+    }
+
+    # create distance matrix
+    dist_matrix <- ape::cophenetic.phylo(tre)
+
+    # output data.frame
+    df_hits_tips <- NULL
+
+    # iterate over tips
+    for (tips in ls_tips_check) {
+        # check if sample exists
+        if (!tips%in%tre$tip.label) {
+            next
+        }
+
+        # extract distances from the tip
+        dist_to_tips <- dist_matrix[tips, ]
+        dist_to_tips <- dist_to_tips[names(dist_to_tips) != tips]
+
+        # iterate over number of neighbours
+        for (n in params$n_neighbour) {
+            df_hits_temp <- f_extract_closest_group(dist_to_tips, n, params$taxonomic_level, df_metadata) %>%
+                                mutate(tips=tips, locus=locus, n_tips=length(tre$tip.label), n_neighbour=n) %>%
+                                select(tips, locus, n_tips, n_neighbour, !!!syms(params$taxonomic_level))
+
+            df_hits_tips <- rbind(df_hits_tips, df_hits_temp)
+        }
+    }
+
+    return(df_hits_tips)
+}
+
+stopCluster(nwcl)
+
+# extract list of tips
+for (tip in unique(df_all_hits$tips)) {
+    df_all_hits_tips <- df_all_hits %>% filter(tips==tip) %>% arrange(locus)
+    data.table::fwrite(df_all_hits_tips, file=file.path(dir_allhits, paste0(tip, ".tsv")), sep="\t", quote=F)       
+}
+
+# iterate over number of neighbours
+for (n in params$n_neighbour) {
+    # output data.frame
+    df_best_hits <- NULL
+
+    # iterate over taxonomic levels
+    for (level in params$taxonomic_level) {
+        # group hits by tips
+        df_hits_per_tips <- df_all_hits %>%
+                                filter(n_neighbour==n) %>%
+                                group_by(tips) %>%
+                                mutate(n_locus_total=n_distinct(locus)) %>%
+                                group_by(tips, n_neighbour, !!sym(level)) %>%
+                                summarise(
+                                    n_locus=n_distinct(locus),
+                                    n_locus_total=first(n_locus_total),
+                                    prop_locus=round(n_locus/n_locus_total*100,3)) %>%
+                                arrange(tips, n_neighbour, desc(prop_locus))
+        
+        # save data.frame
+        fn_hits_per_tips <- file.path(currentdir, paste0("prop_", level, "_", n, "neighbours.tsv"))
+        data.table::fwrite(df_hits_per_tips, file=fn_hits_per_tips, sep="\t", quote=F)
+
+        # extract data.frame
+        df_best_hit_per_tips <- df_hits_per_tips %>% group_by(tips) %>% slice_max(prop_locus)
+
+        # update the data.frame
+        df_best_hit_per_tips <- df_best_hit_per_tips %>%
+                                    rename("n_{{level}}"=n_locus,
+                                           "prop_{{level}}"=prop_locus)
+
+        if (is.null(df_best_hits)) {
+            df_best_hits <- df_best_hit_per_tips
+        } else {
+            df_best_hits <- merge(df_best_hits, df_best_hit_per_tips, by=c("tips", "n_neighbour", "n_locus_total"), all=TRUE)
+        }
+    }
+
+    # save data.frame
+    fn_best_hits <- file.path(currentdir, paste0("besthits_", n, "neighbours.tsv"))
+    data.table::fwrite(df_best_hits, file=fn_best_hits, sep="\t", quote=F)
+}
+```

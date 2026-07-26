@@ -1,0 +1,24 @@
+# ============================================================
+#  Taxonomic Consistency Test config file
+#
+#  Edit this file, then run:
+#    Rscript run_pipeline.R --config config.yaml
+# ============================================================
+
+# --- General ------------------------------------------------
+codedir:  "/home/user/TaxonomicConsistencyTest/"      # path to TaxonomicConsistencyTest directory
+prefix:   ""                                          # output prefix (used for filenames) (default: "TCT_output")
+outdir:   "/home/user/output"                         # output directory
+thread:   1                                           # number of parallel threads (default: 1)
+redo:     FALSE                                       # re-run even if output files exist (default: FALSE)
+
+# --- Input Files --------------------------------------------
+dir_locus_tree: ""                        # path to locus tree files
+file_taxonomy_metadata: ""                # path to tips metadata
+
+# [Optional]
+file_list_tips: ""          # list of tips to test (default: "" (all))
+
+# --- Parameters ---------------------------------------------
+n_neighbour:     [1,5]      # number of closest taxa per sample (default: 1,5)
+taxonomic_level: []         # taxonomic levels to test
