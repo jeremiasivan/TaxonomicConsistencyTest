@@ -39,6 +39,8 @@ fn_prefix_output <- file.path(dir_allhits, params$prefix)
 nwcl <- makeCluster(params$thread)
 doSNOW::registerDoSNOW(nwcl)
 
+log4r::info(fn_logger, paste("Starting taxonomic consistency test on", length(ls_tips_check), "samples across", length(ls_trees), "trees..."))
+
 # iterate over locus trees
 df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_closest_group") %dopar% {
     require(dplyr)
@@ -91,9 +93,12 @@ for (tip in unique(df_all_hits$tips)) {
 }
 
 # iterate over number of neighbours
+log4r::info(fn_logger, "Extracting the best hits for individual samples...")
+
 for (n in params$n_neighbour) {
     # output data.frame
     df_best_hits <- NULL
+    df_entropy <- NULL
 
     # iterate over taxonomic levels
     for (level in params$taxonomic_level) {
@@ -102,45 +107,54 @@ for (n in params$n_neighbour) {
                                 filter(n_neighbour==n) %>%
                                 group_by(tips) %>%
                                 mutate(n_locus_total=n_distinct(locus)) %>%
-                                group_by(tips, n_neighbour, !!sym(level)) %>%
+                                group_by(tips, !!sym(level)) %>%
                                 summarise(
                                     n_locus=n_distinct(locus),
                                     n_locus_total=first(n_locus_total),
                                     prop_locus=round(n_locus/n_locus_total*100,3)) %>%
-                                arrange(tips, n_neighbour, desc(prop_locus))
+                                arrange(tips, desc(prop_locus))
         
         # save data.frame
         fn_hits_per_tips <- file.path(currentdir, paste0("prop_", level, "_", n, "neighbours.tsv"))
         data.table::fwrite(df_hits_per_tips, file=fn_hits_per_tips, sep="\t", quote=F)
 
         # calculate Shannon's entropy
-        df_entropy <- df_hits_per_tips %>%
-                        group_by(tips) %>%
-                        mutate(prop_total=sum(prop_locus), prop_locus=prop_locus/prop_total) %>%
-                        group_by(tips) %>%
-                        summarise("eff_{{level}}" = exp(-sum(prop_locus * log(prop_locus))))
+        df_entropy_level <- df_hits_per_tips %>%
+                                group_by(tips) %>%
+                                mutate(prop_total=sum(prop_locus), prop_locus=prop_locus/prop_total) %>%
+                                group_by(tips) %>%
+                                summarise("eff_{{level}}" := exp(-sum(prop_locus * log(prop_locus))))
 
-        # save data.frame
-        fn_eff_per_tips <- file.path(currentdir, paste0("eff_", level, "_", n, "neighbours.tsv"))
-        data.table::fwrite(df_entropy, file=fn_eff_per_tips, sep="\t", quote=F)
+        # update the data.frame
+        if (is.null(df_entropy)) {
+            df_entropy <- df_entropy_level
+        } else {
+            df_entropy <- merge(df_entropy, df_entropy_level, by="tips", all=TRUE)
+        }
 
         # extract data.frame
         df_best_hit_per_tips <- df_hits_per_tips %>% group_by(tips) %>% slice_max(prop_locus)
 
         # update the data.frame
         df_best_hit_per_tips <- df_best_hit_per_tips %>%
-                                    rename("n_{{level}}"=n_locus,
-                                           "prop_{{level}}"=prop_locus)
+                                    rename("n_{{level}}" := n_locus,
+                                           "prop_{{level}}" := prop_locus)
 
         if (is.null(df_best_hits)) {
             df_best_hits <- df_best_hit_per_tips
         } else {
-            df_best_hits <- merge(df_best_hits, df_best_hit_per_tips, by=c("tips", "n_neighbour", "n_locus_total"), all=TRUE)
+            df_best_hits <- merge(df_best_hits, df_best_hit_per_tips, by=c("tips", "n_locus_total"), all=TRUE)
         }
     }
 
     # save data.frame
     fn_best_hits <- file.path(currentdir, paste0("besthits_", n, "neighbours.tsv"))
     data.table::fwrite(df_best_hits, file=fn_best_hits, sep="\t", quote=F)
+
+    # save data.frame
+    fn_eff <- file.path(currentdir, paste0("eff_", n, "neighbours.tsv"))
+    data.table::fwrite(df_entropy, file=fn_eff, sep="\t", quote=F)
 }
+
+log4r::info(fn_logger, "Finished!")
 ```
