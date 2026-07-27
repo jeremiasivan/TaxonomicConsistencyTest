@@ -73,9 +73,9 @@ df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_
 
         # iterate over number of neighbours
         for (n in params$n_neighbour) {
-            df_hits_temp <- f_extract_closest_group(dist_to_tips, n, params$taxonomic_level, df_metadata) %>%
+            df_hits_temp <- f_extract_closest_group(dist_to_tips, n, params$taxonomic_rank, df_metadata) %>%
                                 mutate(tips=tips, locus=locus, n_tips=length(tre$tip.label), n_neighbour=n) %>%
-                                select(tips, locus, n_tips, n_neighbour, !!!syms(params$taxonomic_level))
+                                select(tips, locus, n_tips, n_neighbour, !!!syms(params$taxonomic_rank))
 
             df_hits_tips <- rbind(df_hits_tips, df_hits_temp)
         }
@@ -100,8 +100,8 @@ for (n in params$n_neighbour) {
     df_best_hits <- NULL
     df_entropy <- NULL
 
-    # iterate over taxonomic levels
-    for (level in params$taxonomic_level) {
+    # iterate over taxonomic ranks
+    for (level in params$taxonomic_rank) {
         # group hits by tips
         df_hits_per_tips <- df_all_hits %>%
                                 filter(n_neighbour==n) %>%
@@ -123,7 +123,7 @@ for (n in params$n_neighbour) {
                                 group_by(tips) %>%
                                 mutate(prop_total=sum(prop_locus), prop_locus=prop_locus/prop_total) %>%
                                 group_by(tips) %>%
-                                summarise("eff_{{level}}" := exp(-sum(prop_locus * log(prop_locus))))
+                                summarise("eff_{level}" := exp(-sum(prop_locus * log(prop_locus))))
 
         # update the data.frame
         if (is.null(df_entropy)) {
@@ -137,8 +137,8 @@ for (n in params$n_neighbour) {
 
         # update the data.frame
         df_best_hit_per_tips <- df_best_hit_per_tips %>%
-                                    rename("n_{{level}}" := n_locus,
-                                           "prop_{{level}}" := prop_locus)
+                                    rename("n_{level}" := n_locus,
+                                           "prop_{level}" := prop_locus)
 
         if (is.null(df_best_hits)) {
             df_best_hits <- df_best_hit_per_tips

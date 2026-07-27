@@ -26,7 +26,7 @@ params:
   
   # --- Parameters ----------------------------------------------
   n_neighbour: !r c(1, 5, 10)
-  taxonomic_level: !r c("genus", "subgenus", "section")
+  taxonomic_rank: !r c("genus", "subgenus", "section")
 ---
 
 ## Load required libraries and functions

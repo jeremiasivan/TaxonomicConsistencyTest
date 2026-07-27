@@ -21,4 +21,4 @@ file_list_tips: ""          # list of tips to test (default: "" (all))
 
 # --- Parameters ---------------------------------------------
 n_neighbour:     [1,5]      # number of closest taxa per sample (default: 1,5)
-taxonomic_level: []         # taxonomic levels to test
+taxonomic_rank: []          # taxonomic ranks to test

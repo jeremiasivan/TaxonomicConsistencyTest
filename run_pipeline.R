@@ -45,7 +45,7 @@ if (!file.exists(opt$config)) {
 cfg <- yaml::read_yaml(opt$config)
 
 # set required parameters
-required_fields <- c("codedir", "outdir", "dir_locus_tree", "file_taxonomy_metadata", "taxonomic_level")
+required_fields <- c("codedir", "outdir", "dir_locus_tree", "file_taxonomy_metadata", "taxonomic_rank")
 missing <- setdiff(required_fields, names(cfg))
 if (length(missing) > 0) {
   stop(paste("Missing required config fields:", paste(missing, collapse=", ")))
@@ -64,8 +64,8 @@ if (!file.exists(path.expand(cfg$file_taxonomy_metadata))) {
   stop(paste("file_taxonomy_metadata file not found:", cfg$file_taxonomy_metadata))
 }
 
-if (length(unlist(cfg$taxonomic_level))==0) {
-  stop(paste("Invalid taxonomic levels to test:", cfg$taxonomic_level))
+if (length(unlist(cfg$taxonomic_rank))==0) {
+  stop(paste("Invalid taxonomic ranks to test:", cfg$taxonomic_rank))
 }
 
 # check if prefix is set
@@ -93,7 +93,7 @@ render_params <- list(
   file_list_tips       = f_get_param(cfg$file_list_tips, ""),
 
   n_neighbour          = unlist(f_get_param(cfg$n_neighbour, list(1,5))),
-  taxonomic_level      = cfg$taxonomic_level
+  taxonomic_rank       = cfg$taxonomic_rank
 )
 
 # --- Run Taxonomic Consistency Test --------------------------
@@ -114,10 +114,10 @@ message("  Threads:         ", render_params$thread)
 rmarkdown::render(
   input       = rmd_path,
   params      = render_params,
-  output_file = paste0(render_params$prefix, "_TCT_report.html"),
+  output_file = paste0(render_params$prefix, "_report.html"),
   output_dir  = file.path(path.expand(render_params$outdir), render_params$prefix),
   quiet       = FALSE
 )
 
 message("Done. Report: ",
-        file.path(path.expand(render_params$outdir), render_params$prefix, paste0(render_params$prefix, "_TCT_report.html")))
+        file.path(path.expand(render_params$outdir), render_params$prefix, paste0(render_params$prefix, "_report.html")))
