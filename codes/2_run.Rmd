@@ -11,6 +11,10 @@ if (!dir.exists(dir_allhits)) {
 
 # open metadata file
 df_metadata <- data.table::fread(params$file_taxonomy_metadata)
+if (!all(params$taxonomic_rank %in% colnames(df_metadata))) {
+    log4r::error(fn_logger, "Error: one or more taxonomic ranks are not found in the metadata file. Exited.")
+    knitr::knit_exit()
+}
 
 # extract list of trees
 ls_trees <- list.files(params$dir_locus_tree, recursive=F, full.names=F)
@@ -39,7 +43,12 @@ fn_prefix_output <- file.path(dir_allhits, params$prefix)
 nwcl <- makeCluster(params$thread)
 doSNOW::registerDoSNOW(nwcl)
 
-log4r::info(fn_logger, paste("Starting taxonomic consistency test on", length(ls_tips_check), "samples across", length(ls_trees), "trees..."))
+# update log file
+if (length(ls_tips_check)<1) {
+    log4r::info(fn_logger, paste("Starting taxonomic consistency test on all samples across", length(ls_trees), "trees..."))
+} else {
+    log4r::info(fn_logger, paste("Starting taxonomic consistency test on", length(ls_tips_check), "samples across", length(ls_trees), "trees..."))
+}
 
 # iterate over locus trees
 df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_closest_group") %dopar% {
@@ -123,7 +132,7 @@ for (n in params$n_neighbour) {
                                 group_by(tips) %>%
                                 mutate(prop_total=sum(prop_locus), prop_locus=prop_locus/prop_total) %>%
                                 group_by(tips) %>%
-                                summarise("eff_{level}" := exp(-sum(prop_locus * log(prop_locus))))
+                                summarise("eff_{level}" := round(exp(-sum(prop_locus * log(prop_locus))),3))
 
         # update the data.frame
         if (is.null(df_entropy)) {
