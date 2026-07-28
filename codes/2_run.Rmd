@@ -22,9 +22,9 @@ if (!all(params$taxonomic_rank %in% colnames(df_metadata))) {
 }
 
 # extract list of trees
-ls_trees <- list.files(params$dir_locus_tree, recursive=F, full.names=F)
+ls_trees <- list.files(params$dir_gene_tree, recursive=F, full.names=F)
 if (length(ls_trees)<1) {
-    log4r::error(fn_logger, "Error: list of locus trees is of length zero. Exited.")
+    log4r::error(fn_logger, "Error: list of gene trees is of length zero. Exited.")
     knitr::knit_exit()
 }
 
@@ -55,7 +55,7 @@ if (length(ls_tips_check)<1) {
     log4r::info(fn_logger, paste("Starting taxonomic consistency test on", length(ls_tips_check), "samples across", length(ls_trees), "trees..."))
 }
 
-# iterate over locus trees
+# iterate over gene trees
 df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_closest_group") %dopar% {
     require(dplyr)
 
@@ -63,7 +63,7 @@ df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_
     locus <- tools::file_path_sans_ext(basename(fn_tree))
 
     # open treefile
-    tre <- ape::read.tree(file.path(params$dir_locus_tree, fn_tree))
+    tre <- ape::read.tree(file.path(params$dir_gene_tree, fn_tree))
     if (length(ls_tips_check)<1) {
         ls_tips_check <- tre$tip.label
     }

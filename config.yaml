@@ -13,8 +13,8 @@ thread:   1                                           # number of parallel threa
 redo:     FALSE                                       # re-run even if output files exist (default: FALSE)
 
 # --- Input Files --------------------------------------------
-dir_locus_tree: ""                        # path to locus tree files
-file_taxonomy_metadata: ""                # path to sample metadata
+dir_gene_tree: ""                        # path to gene tree files
+file_taxonomy_metadata: ""               # path to sample metadata
 
 # [Optional]
 file_list_tips: ""          # list of tips to test with one tip per line (default: "" (all))

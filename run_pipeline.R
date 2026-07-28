@@ -45,19 +45,19 @@ if (!file.exists(opt$config)) {
 cfg <- yaml::read_yaml(opt$config)
 
 # set required parameters
-required_fields <- c("codedir", "outdir", "dir_locus_tree", "file_taxonomy_metadata", "taxonomic_rank")
+required_fields <- c("codedir", "outdir", "dir_gene_tree", "file_taxonomy_metadata", "taxonomic_rank")
 missing <- setdiff(required_fields, names(cfg))
 if (length(missing) > 0) {
   stop(paste("Missing required config fields:", paste(missing, collapse=", ")))
 }
 
 # check if input files are invalid
-if (is.null(cfg$dir_locus_tree) || cfg$dir_locus_tree == "") {
-  stop("dir_locus_tree must be set in the config file.")
+if (is.null(cfg$dir_gene_tree) || cfg$dir_gene_tree == "") {
+  stop("dir_gene_tree must be set in the config file.")
 }
 
-if (!dir.exists(path.expand(cfg$dir_locus_tree))) {
-  stop(paste("dir_locus_tree not found:", cfg$dir_locus_tree))
+if (!dir.exists(path.expand(cfg$dir_gene_tree))) {
+  stop(paste("dir_gene_tree not found:", cfg$dir_gene_tree))
 }
 
 if (!file.exists(path.expand(cfg$file_taxonomy_metadata))) {
@@ -87,7 +87,7 @@ render_params <- list(
   thread               = as.integer(f_get_param(cfg$thread, 1)),
   redo                 = as.logical(f_get_param(cfg$redo, FALSE)),
 
-  dir_locus_tree          = cfg$dir_locus_tree,
+  dir_gene_tree           = cfg$dir_gene_tree,
   file_taxonomy_metadata  = cfg$file_taxonomy_metadata,
 
   file_list_tips       = f_get_param(cfg$file_list_tips, ""),
@@ -106,7 +106,7 @@ message("Starting Taxonomic Consistency Test...")
 message("  Config:          ", opt$config)
 message("  Prefix:          ", render_params$prefix)
 message("  Output:          ", render_params$outdir)
-message("  Locus trees:     ", render_params$dir_locus_tree)
+message("  Gene trees:      ", render_params$dir_gene_tree)
 message("  Metadata file:   ", render_params$file_taxonomy_metadata)
 message("  Threads:         ", render_params$thread)
 

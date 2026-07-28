@@ -54,11 +54,11 @@ Taxonomic Consistency Test requires several R packages to run. We recommend you 
 ## <a id="inout">Input and Output Files</a>
 
 ### Input Files
-To run Taxonomic Consistency Test, users are required to provide a directory of locus trees and metadata file for all tips on the trees. The metadata file should have a `sample` column, as well as separate columns for individual taxonomic ranks to be tested (e.g., genus, species). For example:
+To run Taxonomic Consistency Test, users are required to provide a directory of gene trees and metadata file for all tips on the trees. The metadata file should have a `sample` column, as well as separate columns for individual taxonomic ranks to be tested (e.g., genus, species). For example:
 
-- `dir_locus_tree`
+- `dir_gene_tree`
     ```
-    locus_tree_directory/
+    gene_tree_directory/
     ├── gene01.treefile
     ├── gene02.treefile
     ├── gene03.treefile
@@ -76,10 +76,10 @@ To run Taxonomic Consistency Test, users are required to provide a directory of 
 
 ### Output Files
 Running Taxonomic Consistency Test will create an output folder that consists of:
-- `allhits/` : all hits (i.e., closest taxa) for individual tips across all locus trees
-- `prop_rank_nneighbours.tsv`  : proportion of taxon assignment for individual tips across all locus trees
-- `besthits_nneighbours.tsv`   : best taxon assignment for individual tips across all locus trees
-- `eff_nneighbours.tsv`        : effective number of categories for individual tips across all locus trees
+- `allhits/` : all hits (i.e., closest taxa) for individual tips across all gene trees
+- `prop_rank_nneighbours.tsv`  : proportion of taxon assignment for individual tips across all gene trees
+- `besthits_nneighbours.tsv`   : best taxon assignment for individual tips across all gene trees
+- `eff_nneighbours.tsv`        : effective number of categories for individual tips across all gene trees
 - `prefix.log`             : Taxonomic Consistency Test log file
 - `prefix_report.html`     : Taxonomic Consistency Test HTML report
 
