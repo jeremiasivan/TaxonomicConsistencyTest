@@ -17,6 +17,7 @@ Taxonomic Consistency Test requires several R packages to run. We recommend you 
 | ape        | <a href="https://cran.r-project.org/package=ape">Link</a>        | <a href="https://anaconda.org/conda-forge/r-ape">Link</a>                |
 | data.table | <a href="https://cran.r-project.org/package=data.table">Link</a> | <a href="https://anaconda.org/conda-forge/r-data.table">Link</a>         |
 | doSNOW     | <a href="https://cran.r-project.org/package=doSNOW">Link</a>     | <a href="https://anaconda.org/conda-forge/r-dosnow">Link</a>             |
+| kableExtra | <a href="https://cran.r-project.org/package=kableExtra">Link</a> | <a href="https://anaconda.org/conda-forge/r-kableextra">Link</a> |
 | log4r      | <a href="https://cran.r-project.org/package=log4r">Link</a>      | <a href="https://anaconda.org/conda-forge/r-log4r">Link</a>              |
 | optparse   | <a href="https://cran.r-project.org/package=optparse">Link</a>   | <a href="https://anaconda.org/conda-forge/r-optparse">Link</a>           |
 | rmarkdown  | <a href="https://cran.r-project.org/package=rmarkdown">Link</a>  | <a href="https://anaconda.org/conda-forge/r-rmarkdown">Link</a>          |
@@ -37,7 +38,7 @@ Taxonomic Consistency Test requires several R packages to run. We recommend you 
         ```
     - Installing prerequisites
         ```
-        conda install -c conda-forge r-ape r-data.table r-doSNOW r-log4r r-optparse r-rmarkdown r-tidyverse r-yaml
+        conda install -c conda-forge r-ape r-data.table r-doSNOW r-kableExtra r-log4r r-optparse r-rmarkdown r-tidyverse r-yaml
         ```
 
 3. **Update the parameters in `config.yaml`** <br>
@@ -53,14 +54,32 @@ Taxonomic Consistency Test requires several R packages to run. We recommend you 
 ## <a id="inout">Input and Output Files</a>
 
 ### Input Files
-To run Taxonomic Consistency Test, users are required to provide a directory of locus trees, as well as metadata file for all tips on the trees. The metadata file should have separate columns for individual taxonomic ranks (e.g., genus, subgenus).
+To run Taxonomic Consistency Test, users are required to provide a directory of locus trees and metadata file for all tips on the trees. The metadata file should have a `sample` column, as well as separate columns for individual taxonomic ranks to be tested (e.g., genus, species). For example:
+
+- `dir_locus_tree`
+    ```
+    locus_tree_directory/
+    ├── gene01.treefile
+    ├── gene02.treefile
+    ├── gene03.treefile
+    ...
+    ```
+
+- `file_taxonomy_metadata`
+    | sample                | genus         | species    |
+    | --------------------- | ------------- | ---------- |
+    | SpeciesA_Sample01     | GenusX        | SpeciesA   |
+    | SpeciesA_Sample02     | GenusX        | SpeciesA   |
+    | SpeciesB_Sample01     | GenusX        | SpeciesB   |
+    | SpeciesC_Sample01     | GenusY        | SpeciesC   |
+    | ...                   | ...           | ...        |
 
 ### Output Files
 Running Taxonomic Consistency Test will create an output folder that consists of:
 - `allhits/` : all hits (i.e., closest taxa) for individual tips across all locus trees
-- `prop_rank_nneighbours.tsv`  : proportion of taxon assignment for individaul tips across all locus trees
-- `besthits_nneighbours.tsv`   : best taxon assignment for individaul tips across all locus trees
-- `eff_nneighbours.tsv`        : effective number of categories for individaul tips across all locus trees
+- `prop_rank_nneighbours.tsv`  : proportion of taxon assignment for individual tips across all locus trees
+- `besthits_nneighbours.tsv`   : best taxon assignment for individual tips across all locus trees
+- `eff_nneighbours.tsv`        : effective number of categories for individual tips across all locus trees
 - `prefix.log`             : Taxonomic Consistency Test log file
 - `prefix_report.html`     : Taxonomic Consistency Test HTML report
 
@@ -72,17 +91,19 @@ Running Taxonomic Consistency Test will create an output folder that consists of
 
 3. Daniel, F. (<a href="https://cran.r-project.org/package=doSNOW">2022</a>). **doSNOW: Foreach Parallel Adaptor for the 'snow' Package**. *R package*.
 
-4. White, J.M. & Jacobs, A. (<a href="https://doi.org/10.32614/CRAN.package.log4r">2024</a>). **log4r: A Fast and Lightweight Logging System for R, Based on 'log4j'**. *R package*.
+4. Zhu, H., et al. (<a href="https://cran.r-project.org/package=kableExtra">2024</a>). **kableExtra: Construct Complex Table with 'kable' and Pipe Syntax**. *R package*.
 
-5. Davis, T.L. (<a href="https://doi.org/10.32614/CRAN.package.optparse">2026</a>). **optparse: Command Line Option Parser**. *R package*.
+5. White, J.M. & Jacobs, A. (<a href="https://doi.org/10.32614/CRAN.package.log4r">2024</a>). **log4r: A Fast and Lightweight Logging System for R, Based on 'log4j'**. *R package*.
 
-6. Allaire, J.J., et al. (<a href="https://doi.org/10.32614/CRAN.package.rmarkdown">2026</a>). **rmarkdown: Dynamic Documents for R**. *R package*.
+6. Davis, T.L. (<a href="https://doi.org/10.32614/CRAN.package.optparse">2026</a>). **optparse: Command Line Option Parser**. *R package*.
 
-7. Wickham, H., et al. (<a href="https://doi.org/10.21105/joss.01686">2019</a>). **Welcome to the tidyverse**. *Journal of Open Source Software*, *4*(43), 1686.
+7. Allaire, J.J., et al. (<a href="https://doi.org/10.32614/CRAN.package.rmarkdown">2026</a>). **rmarkdown: Dynamic Documents for R**. *R package*.
 
-8. Stephens, J., et al. (<a href="https://doi.org/10.32614/CRAN.package.yaml">2025</a>). **yaml: Methods to Convert R Data to YAML and Back**. *R package*.
+8. Wickham, H., et al. (<a href="https://doi.org/10.21105/joss.01686">2019</a>). **Welcome to the tidyverse**. *Journal of Open Source Software*, *4*(43), 1686.
 
-9. Anthropic. (<a href="https://claude.ai/">2026</a>). Claude 4.6 Sonnet was used to generate `config.yaml` and `run_pipeline.R`. 
+9. Stephens, J., et al. (<a href="https://doi.org/10.32614/CRAN.package.yaml">2025</a>). **yaml: Methods to Convert R Data to YAML and Back**. *R package*.
+
+10. Anthropic. (<a href="https://claude.ai/">2026</a>). Claude 4.6 Sonnet was used to generate `config.yaml` and `run_pipeline.R`. 
 
 ---
-*Last update: 27 July 2026 by Jeremias Ivan*
+*Last update: 28 July 2026 by Jeremias Ivan*

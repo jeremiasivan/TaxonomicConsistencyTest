@@ -25,8 +25,8 @@ params:
   file_list_tips: ""
   
   # --- Parameters ----------------------------------------------
-  n_neighbour: !r c(1, 5, 10)
-  taxonomic_rank: !r c("genus", "subgenus", "section")
+  n_neighbour: !r c(1, 5)
+  taxonomic_rank: !r c("genus", "species")
 ---
 
 ## Load required libraries and functions
@@ -36,6 +36,7 @@ sys_tic <- Sys.time()
 
 # load libraries and function
 suppressPackageStartupMessages(library(doSNOW))
+suppressPackageStartupMessages(library(kableExtra))
 suppressPackageStartupMessages(library(tidyverse))
 
 source(file.path(path.expand(params$codedir), "codes", "functions.R"), local=TRUE)

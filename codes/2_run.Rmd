@@ -9,6 +9,11 @@ if (!dir.exists(dir_allhits)) {
     dir.create(dir_allhits, recursive=T)
 }
 
+if (length(list.files(dir_path, recursive=T))!=0 & !params$redo) {
+    log4r::error(fn_logger, "Error: output directory is not empty. Exited.")
+    knitr::knit_exit()
+}
+
 # open metadata file
 df_metadata <- data.table::fread(params$file_taxonomy_metadata)
 if (!all(params$taxonomic_rank %in% colnames(df_metadata))) {
@@ -38,7 +43,7 @@ if (file.exists(params$file_list_tips) & params$file_list_tips!="") {
 fn_prefix_output <- file.path(dir_allhits, params$prefix)
 ```
 
-```{r taxonomic-consistency}
+```{r taxonomic-consistency, include=FALSE}
 # create doSNOW cluster
 nwcl <- makeCluster(params$thread)
 doSNOW::registerDoSNOW(nwcl)
@@ -166,4 +171,67 @@ for (n in params$n_neighbour) {
 }
 
 log4r::info(fn_logger, "Finished!")
+```
+
+```{r, results='asis', echo=FALSE}
+# iterate over taxonomic ranks (source: Claude)
+for (rank in params$taxonomic_rank) {
+    # output data.frame
+    df_level_wide <- NULL
+
+    # iterate over number of neighbours
+    for (n in params$n_neighbour) {
+        # open output files
+        fn_best_hits <- file.path(currentdir, paste0("besthits_", n, "neighbours.tsv"))
+        fn_eff <- file.path(currentdir, paste0("eff_", n, "neighbours.tsv"))
+
+        df_best_hits <- data.table::fread(fn_best_hits)
+        df_eff <- data.table::fread(fn_eff)
+
+        # extract the proportion and effective number of categories
+        prop_rank <- paste0("prop_", rank)
+        eff_rank <- paste0("eff_", rank)
+
+        df_sub <- df_best_hits %>%
+                    select(tips, !!sym(rank), !!sym(prop_rank)) %>%
+                    left_join(df_eff %>% select(tips, !!sym(eff_rank)), by="tips") %>%
+                    rename("taxon_n{n}" := !!sym(rank),
+                           "prop_n{n}" := !!sym(prop_rank),
+                           "eff_n{n}" := !!sym(eff_rank))
+
+        # update the output data.frame
+        if (is.null(df_level_wide)) {
+            df_level_wide <- df_sub
+        } else {
+            df_level_wide <- merge(df_level_wide, df_sub, by="tips", all=TRUE)
+        }
+    }
+
+    # enforce column order
+    ordered_cols <- "tips"
+    for (n in params$n_neighbour) {
+        ordered_cols <- c(ordered_cols, paste0("taxon_n",n), paste0("prop_n",n), paste0("eff_n",n))
+    }
+    df_level_wide <- df_level_wide %>% select(all_of(ordered_cols))
+
+    cat("\n\n## Taxonomic rank:", rank, "\n\n")
+
+    # create top header for the data.frame
+    header_top <- c(" " = 1)
+    for (n in params$n_neighbour) {
+        header_top <- c(header_top, setNames(3, paste0("n_neighbour==", n)))
+    }
+
+    # update the column labels to be consistent
+    col_labels <- c("Tips", rep(c("Taxon", "Prop (%)", "Eff"), times=length(params$n_neighbour)))
+
+    # create output data.frame
+    html_tabel <- knitr::kable(df_level_wide, col.names=col_labels, format="html", escape=FALSE) %>%
+                    kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=TRUE) %>%
+                    add_header_above(header_top) %>%
+                    scroll_box(height="400px", width="100%")
+
+    print(html_tabel)
+    cat("\n\n")
+}
 ```
