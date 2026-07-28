@@ -1,11 +1,11 @@
 # TaxonomicConsistencyTest
 
-**Taxonomic Consistency Test** is an R pipeline to measure the variation of per-tip taxonomic placements across gene trees. It requires a set of gene trees as input, as well as taxonomic grouping for every sample on the trees. It is mainly developed and tested using Linux, so there might be incompatibilities using MacOS and Windows.
+**Taxonomic Consistency Test** is an R pipeline to measure the variation of per-tip taxonomic placements across gene trees. It requires a set of gene trees as input, as well as the taxonomic groups for every sample on the trees. It is mainly developed and tested using Linux, so there might be incompatibilities using MacOS and Windows.
 
 ## Table of Content
 - <a href="#prereqs">Prerequisites</a>
-- <a href="#genpipe">General Pipeline</a>
 - <a href="#inout">Input and Output Files</a>
+- <a href="#genpipe">General Pipeline</a>
 - <a href="#refs">References</a>
 
 ## <a id="prereqs">Prerequisites</a>
@@ -24,37 +24,10 @@ Taxonomic Consistency Test requires several R packages to run. We recommend you 
 | tidyverse  | <a href="https://cran.r-project.org/package=tidyverse">Link</a>  | <a href="https://anaconda.org/conda-forge/r-tidyverse">Link</a>          |
 | yaml       | <a href="https://cran.r-project.org/package=yaml">Link</a>       | <a href="https://anaconda.org/conda-forge/r-yaml">Link</a>               |
 
-## <a id="genpipe">General Pipeline</a>
-1. **Clone the Git repository** <br>
-    ```
-    git clone git@github.com:jeremiasivan/TaxonomicConsistencyTest.git
-    ```
-
-2. **Install the prerequisites** <br>
-    - Create a new conda environment
-        ```
-        conda create -n tct
-        conda activate tct
-        ```
-    - Installing prerequisites
-        ```
-        conda install -c conda-forge r-ape r-data.table r-doSNOW r-kableExtra r-log4r r-optparse r-rmarkdown r-tidyverse r-yaml
-        ```
-
-3. **Update the parameters in `config.yaml`** <br>
-
-4. **Run Taxonomic Consistency Test** <br>
-    ```
-    Rscript run_pipeline.R --config config.yaml
-    Rscript run_pipeline.R --config config.yaml --redo
-    ```
-
-    In UNIX-based operating systems (e.g., Linux and MacOS), it is advisable to use `nohup` or `tmux` to run the whole pipeline. For Windows, you can use `psmux`. 
-
 ## <a id="inout">Input and Output Files</a>
 
 ### Input Files
-To run Taxonomic Consistency Test, users are required to provide a directory of gene trees and metadata file for all tips on the trees. The metadata file should have a `sample` column, as well as separate columns for individual taxonomic ranks to be tested (e.g., genus, species). For example:
+To run Taxonomic Consistency Test, users are required to provide a directory of gene trees and metadata file for all tips on the trees (see <a href="./config.yaml">`config.yaml`</a>). The metadata file should have a `sample` column, as well as separate columns for individual taxonomic ranks to be tested (e.g., genus, species). For example:
 
 - `dir_gene_tree`
     ```
@@ -77,11 +50,38 @@ To run Taxonomic Consistency Test, users are required to provide a directory of 
 ### Output Files
 Running Taxonomic Consistency Test will create an output folder that consists of:
 - `allhits/` : all hits (i.e., closest taxa) for individual tips across all gene trees
-- `prop_rank_nneighbours.tsv`  : proportion of taxon assignment for individual tips across all gene trees
-- `besthits_nneighbours.tsv`   : best taxon assignment for individual tips across all gene trees
-- `eff_nneighbours.tsv`        : effective number of categories for individual tips across all gene trees
+- `prop_rank_Xneighbours.tsv`  : proportion of taxonomic `rank` assignment by considering `X` nearest neighbours
+- `besthits_Xneighbours.tsv`   : best taxonomic assignment across ranks by considering `X` nearest neighbours
+- `eff_Xneighbours.tsv`        : effective number of categories across taxonomic ranks by considering `X` nearest neighbours
 - `prefix.log`             : Taxonomic Consistency Test log file
 - `prefix_report.html`     : Taxonomic Consistency Test HTML report
+
+## <a id="genpipe">General Pipeline</a>
+1. **Clone the Git repository** <br>
+    ```
+    git clone git@github.com:jeremiasivan/TaxonomicConsistencyTest.git
+    ```
+
+2. **Install the prerequisites** <br>
+    - Create a new conda environment
+        ```
+        conda create -n taxontest
+        conda activate taxontest
+        ```
+    - Installing prerequisites
+        ```
+        conda install -c conda-forge r-ape r-data.table r-doSNOW r-kableExtra r-log4r r-optparse r-rmarkdown r-tidyverse r-yaml
+        ```
+
+3. **Update the parameters in `config.yaml`** <br>
+
+4. **Run Taxonomic Consistency Test** <br>
+    ```
+    Rscript run_pipeline.R --config config.yaml
+    Rscript run_pipeline.R --config config.yaml --redo
+    ```
+
+    In UNIX-based operating systems (e.g., Linux and MacOS), it is advisable to use `nohup` or `tmux` to run the whole pipeline. For Windows, you can use `psmux`. 
 
 ---
 ## <a id="refs">References</a>
