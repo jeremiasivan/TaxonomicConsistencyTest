@@ -105,7 +105,9 @@ for (tip in unique(df_all_hits$tips)) {
     df_all_hits_tips <- df_all_hits %>% filter(tips==tip) %>% arrange(locus)
     data.table::fwrite(df_all_hits_tips, file=file.path(dir_allhits, paste0(tip, ".tsv")), sep="\t", quote=F)       
 }
+```
 
+```{r best-taxonomy-hits, include=FALSE}
 # iterate over number of neighbours
 log4r::info(fn_logger, "Extracting the best hits for individual samples...")
 
@@ -169,6 +171,78 @@ for (n in params$n_neighbour) {
     fn_eff <- file.path(currentdir, paste0("eff_", n, "neighbours.tsv"))
     data.table::fwrite(df_entropy, file=fn_eff, sep="\t", quote=F)
 }
+
+log4r::info(fn_logger, "Finished!")
+```
+
+```{r match-taxonomy-hits, include=FALSE}
+# iterate over number of neighbours
+log4r::info(fn_logger, "Extracting matching hits for individual samples...")
+
+# extract list of tips
+ls_tips_check <- unique(df_all_hits$tips)
+
+# create doSNOW cluster
+nwcl <- makeCluster(params$thread)
+doSNOW::registerDoSNOW(nwcl)
+
+# iterate over number of neighbours
+for (n in params$n_neighbour) {
+    # iterate over samples
+    df_matching_hits <- foreach(tip=ls_tips_check, .combine='rbind') %dopar% {
+        require(dplyr)
+
+        # extract metadata entry (if any)
+        df_metadata_tip <- df_metadata[df_metadata$sample==tip,]
+        if (nrow(df_metadata_tip)!=1) {
+            return(NULL)
+        }
+
+        # output data.frame
+        df_match_hit <- NULL
+
+        # iterate over taxonomic ranks
+        for (rank in params$taxonomic_rank) {
+            # input files
+            fn_hits_per_tips <- file.path(currentdir, paste0("prop_", rank, "_", n, "neighbours.tsv"))
+            df_hits_per_tips <- data.table::fread(fn_hits_per_tips)
+            
+            # extract the taxon
+            taxon_group <- df_metadata_tip %>% pull(!!sym(rank))
+            df_hit_group <- df_hits_per_tips %>%
+                                filter(tips==tip & !!sym(rank)==taxon_group)
+            
+            # set the proportion to be zero if group is not found
+            if (nrow(df_hit_group)==0) {
+                df_hit_group <- df_hits_per_tips %>%
+                                    filter(tips==tip) %>%
+                                    slice_head(n=1) %>%
+                                    mutate(!!sym(rank):=taxon_group, n_locus=0, prop_locus=0)
+            }
+
+            # update the data.frame
+            df_hit_group <- df_hit_group %>%
+                                rename("n_{rank}" := n_locus,
+                                        "prop_{rank}" := prop_locus)
+
+            if (is.null(df_match_hit)) {
+                df_match_hit <- df_hit_group
+            } else {
+                df_match_hit <- merge(df_match_hit, df_hit_group, by=c("tips", "n_locus_total"), all=TRUE)
+            }
+        }
+
+        return(df_match_hit)
+    }
+
+    # save data.frame
+    if (!is.null(df_matching_hits) && nrow(df_matching_hits)>0) {
+        fn_match_hits <- file.path(currentdir, paste0("matchhits_", n, "neighbours.tsv"))
+        data.table::fwrite(df_matching_hits, file=fn_match_hits, sep="\t", quote=F)
+    }
+}    
+
+stopCluster(nwcl)
 
 log4r::info(fn_logger, "Finished!")
 ```
