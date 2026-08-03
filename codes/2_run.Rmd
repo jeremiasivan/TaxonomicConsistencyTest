@@ -9,7 +9,7 @@ if (!dir.exists(dir_allhits)) {
     dir.create(dir_allhits, recursive=T)
 }
 
-if (length(list.files(dir_path, recursive=T))!=0 & !params$redo) {
+if (length(list.files(dir_allhits, recursive=T))!=0 & !params$redo) {
     log4r::error(fn_logger, "Error: output directory is not empty. Exited.")
     knitr::knit_exit()
 }
