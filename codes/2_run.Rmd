@@ -87,10 +87,9 @@ df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_
 
         # iterate over number of neighbours
         for (n in params$n_neighbour) {
-            df_hits_temp <- f_extract_closest_group(dist_to_tips, n, params$taxonomic_rank, df_metadata) %>%
+            df_hits_temp <- f_extract_closest_group(dist_to_tips, n, params$taxonomic_rank, df_metadata, params$keep_ties) %>%
                                 mutate(tips=tips, locus=locus, n_tips=length(tre$tip.label), n_neighbour=n) %>%
-                                mutate(weight=1/n()) %>%
-                                select(tips, locus, n_tips, n_neighbour, weight, !!!syms(params$taxonomic_rank))
+                                select(tips, locus, n_tips, n_neighbour, rank_level, weight, !!!syms(params$taxonomic_rank))
 
             df_hits_tips <- rbind(df_hits_tips, df_hits_temp)
         }
@@ -122,7 +121,7 @@ for (n in params$n_neighbour) {
     for (level in params$taxonomic_rank) {
         # group hits by tips
         df_hits_per_tips <- df_all_hits %>%
-                                filter(n_neighbour==n) %>%
+                                filter(n_neighbour==n & rank_level==level) %>%
                                 group_by(tips) %>%
                                 mutate(n_locus_total=n_distinct(locus)) %>%
                                 group_by(tips, !!sym(level)) %>%

@@ -27,6 +27,7 @@ params:
   # --- Parameters ----------------------------------------------
   n_neighbour: !r c(1, 5)
   taxonomic_rank: !r c("genus", "species")
+  keep_ties: FALSE
 ---
 
 ## Load required libraries and functions
