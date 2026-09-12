@@ -155,8 +155,8 @@ for (n in params$n_neighbour) {
         }
 
         # extract data.frame
-        df_best_hit_per_tips <- df_hits_per_tips %>% group_by(tips) %>% slice_max(prop_locus, n=1, with_ties=FALSE)
-        df_best_hit_per_tips_weighted <- df_hits_per_tips %>% group_by(tips) %>% slice_max(prop_locus_weighted, n=1, with_ties=FALSE)
+        df_best_hit_per_tips <- df_hits_per_tips %>% group_by(tips) %>% arrange(tips, desc(prop_locus)) %>% slice_max(prop_locus, n=1, with_ties=FALSE)
+        df_best_hit_per_tips_weighted <- df_hits_per_tips %>% group_by(tips) %>% arrange(tips, desc(prop_locus_weighted)) %>% slice_max(prop_locus_weighted, n=1, with_ties=FALSE)
 
         # update the data.frame
         df_best_hit_per_tips <- df_best_hit_per_tips %>%
