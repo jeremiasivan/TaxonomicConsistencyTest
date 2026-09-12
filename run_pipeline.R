@@ -93,7 +93,8 @@ render_params <- list(
   file_list_tips       = f_get_param(cfg$file_list_tips, ""),
 
   n_neighbour          = unlist(f_get_param(cfg$n_neighbour, list(1,5))),
-  taxonomic_rank       = cfg$taxonomic_rank
+  taxonomic_rank       = cfg$taxonomic_rank,
+  keep_ties            = as.logical(f_get_param(cfg$keep_ties, TRUE))
 )
 
 # --- Run Taxonomic Consistency Test --------------------------
