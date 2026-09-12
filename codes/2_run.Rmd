@@ -55,6 +55,10 @@ if (length(ls_tips_check)<1) {
     log4r::info(fn_logger, paste("Starting taxonomic consistency test on", length(ls_tips_check), "samples across", length(ls_trees), "trees..."))
 }
 
+if (!params$keep_ties) {
+    log4r::info(fn_logger, "Loci with tied majority will be filtered out!")
+}
+
 # iterate over gene trees
 df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_closest_group") %dopar% {
     require(dplyr)

@@ -51,7 +51,8 @@ To run Taxonomic Consistency Test, users are required to provide a directory of 
 Running Taxonomic Consistency Test will create an output folder that consists of:
 - `allhits/` : all hits (i.e., closest taxa) for individual tips across all gene trees
 - `prop_rank_Xneighbours.tsv`  : proportion of taxonomic `rank` assignment by considering `X` nearest neighbours
-- `besthits_Xneighbours.tsv`   : best taxonomic assignment across ranks by considering `X` nearest neighbours
+- `besthits_Xneighbours.tsv`   : best unweighted taxonomic assignment across ranks by considering `X` nearest neighbours
+- `besthits_weighted_Xneighbours.tsv`   : best weighted taxonomic assignment across ranks by considering `X` nearest neighbours
 - `matchhits_Xneighbours.tsv`  : current taxonomic assignment (based on metadata file) across ranks by considering `X` nearest neighbours
 - `eff_Xneighbours.tsv`        : effective number of categories across taxonomic ranks by considering `X` nearest neighbours
 - `prefix.log`             : Taxonomic Consistency Test log file
@@ -107,4 +108,4 @@ Running Taxonomic Consistency Test will create an output folder that consists of
 10. Anthropic. (<a href="https://claude.ai/">2026</a>). Claude 4.6 Sonnet was used to generate `config.yaml` and `run_pipeline.R`. 
 
 ---
-*Last update: 29 July 2026 by Jeremias Ivan*
+*Last update: 12 September 2026 by Jeremias Ivan*

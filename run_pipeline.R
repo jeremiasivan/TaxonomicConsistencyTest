@@ -94,7 +94,7 @@ render_params <- list(
 
   n_neighbour          = unlist(f_get_param(cfg$n_neighbour, list(1,5))),
   taxonomic_rank       = cfg$taxonomic_rank,
-  keep_ties            = as.logical(f_get_param(cfg$keep_ties, FALSE)),
+  keep_ties            = as.logical(f_get_param(cfg$keep_ties, TRUE))
 )
 
 # --- Run Taxonomic Consistency Test --------------------------

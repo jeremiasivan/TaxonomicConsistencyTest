@@ -22,4 +22,4 @@ file_list_tips: ""          # list of tips to test with one tip per line (defaul
 # --- Parameters ---------------------------------------------
 n_neighbour:     [1,5]      # number of closest taxa per sample (default: 1,5)
 taxonomic_rank:  []         # taxonomic ranks to test
-keep_ties:       FALSE      # keep loci with tied majority (default: FALSE)
+keep_ties:       TRUE       # keep loci with tied majority (default: TRUE)
