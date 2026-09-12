@@ -89,7 +89,8 @@ df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_
         for (n in params$n_neighbour) {
             df_hits_temp <- f_extract_closest_group(dist_to_tips, n, params$taxonomic_rank, df_metadata) %>%
                                 mutate(tips=tips, locus=locus, n_tips=length(tre$tip.label), n_neighbour=n) %>%
-                                select(tips, locus, n_tips, n_neighbour, !!!syms(params$taxonomic_rank))
+                                mutate(weight=1/n()) %>%
+                                select(tips, locus, n_tips, n_neighbour, weight, !!!syms(params$taxonomic_rank))
 
             df_hits_tips <- rbind(df_hits_tips, df_hits_temp)
         }
@@ -114,6 +115,7 @@ log4r::info(fn_logger, "Extracting the best hits for individual samples...")
 for (n in params$n_neighbour) {
     # output data.frame
     df_best_hits <- NULL
+    df_best_hits_weighted <- NULL
     df_entropy <- NULL
 
     # iterate over taxonomic ranks
@@ -126,9 +128,11 @@ for (n in params$n_neighbour) {
                                 group_by(tips, !!sym(level)) %>%
                                 summarise(
                                     n_locus=n_distinct(locus),
+                                    n_locus_weighted=sum(weight),
                                     n_locus_total=first(n_locus_total),
-                                    prop_locus=round(n_locus/n_locus_total*100,3)) %>%
-                                arrange(tips, desc(prop_locus))
+                                    prop_locus=round(n_locus/n_locus_total*100,3),
+                                    prop_locus_weighted=round(n_locus_weighted/n_locus_total*100,3)) %>%
+                                arrange(tips, desc(prop_locus_weighted))
         
         # save data.frame
         fn_hits_per_tips <- file.path(currentdir, paste0("prop_", level, "_", n, "neighbours.tsv"))
@@ -137,9 +141,11 @@ for (n in params$n_neighbour) {
         # calculate Shannon's entropy
         df_entropy_level <- df_hits_per_tips %>%
                                 group_by(tips) %>%
-                                mutate(prop_total=sum(prop_locus), prop_locus=prop_locus/prop_total) %>%
+                                mutate(prop_total=sum(prop_locus), prop_locus=prop_locus/prop_total,
+                                       prop_total_weighted=sum(prop_locus_weighted), prop_locus_weighted=prop_locus_weighted/prop_total_weighted) %>%
                                 group_by(tips) %>%
-                                summarise("eff_{level}" := round(exp(-sum(prop_locus * log(prop_locus))),3))
+                                summarise("eff_{level}" := round(exp(-sum(prop_locus * log(prop_locus))),3),
+                                          "eff_{level}_weighted" := round(exp(-sum(prop_locus_weighted * log(prop_locus_weighted))),3))
 
         # update the data.frame
         if (is.null(df_entropy)) {
@@ -149,23 +155,35 @@ for (n in params$n_neighbour) {
         }
 
         # extract data.frame
-        df_best_hit_per_tips <- df_hits_per_tips %>% group_by(tips) %>% slice_max(prop_locus)
+        df_best_hit_per_tips <- df_hits_per_tips %>% group_by(tips) %>% slice_max(prop_locus, n=1, with_ties=FALSE)
+        df_best_hit_per_tips_weighted <- df_hits_per_tips %>% group_by(tips) %>% slice_max(prop_locus_weighted, n=1, with_ties=FALSE)
 
         # update the data.frame
         df_best_hit_per_tips <- df_best_hit_per_tips %>%
                                     rename("n_{level}" := n_locus,
-                                           "prop_{level}" := prop_locus)
+                                           "n_{level}_weighted" := n_locus_weighted, 
+                                           "prop_{level}" := prop_locus,
+                                           "prop_{level}_weighted" := prop_locus_weighted)
+        df_best_hit_per_tips_weighted <- df_best_hit_per_tips_weighted %>%
+                                            rename("n_{level}" := n_locus,
+                                                   "n_{level}_weighted" := n_locus_weighted, 
+                                                   "prop_{level}" := prop_locus,
+                                                   "prop_{level}_weighted" := prop_locus_weighted)
 
-        if (is.null(df_best_hits)) {
+        if (is.null(df_best_hits) && is.null(df_best_hits_weighted)) {
             df_best_hits <- df_best_hit_per_tips
+            df_best_hits_weighted <- df_best_hit_per_tips_weighted
         } else {
             df_best_hits <- merge(df_best_hits, df_best_hit_per_tips, by=c("tips", "n_locus_total"), all=TRUE)
+            df_best_hits_weighted <- merge(df_best_hits_weighted, df_best_hit_per_tips_weighted, by=c("tips", "n_locus_total"), all=TRUE)
         }
     }
 
-    # save data.frame
+    # save data.frames
     fn_best_hits <- file.path(currentdir, paste0("besthits_", n, "neighbours.tsv"))
+    fn_best_hits_weighted <- file.path(currentdir, paste0("besthits_weighted_", n, "neighbours.tsv"))
     data.table::fwrite(df_best_hits, file=fn_best_hits, sep="\t", quote=F)
+    data.table::fwrite(df_best_hits_weighted, file=fn_best_hits_weighted, sep="\t", quote=F)
 
     # save data.frame
     fn_eff <- file.path(currentdir, paste0("eff_", n, "neighbours.tsv"))
@@ -217,13 +235,15 @@ for (n in params$n_neighbour) {
                 df_hit_group <- df_hits_per_tips %>%
                                     filter(tips==tip) %>%
                                     slice_head(n=1) %>%
-                                    mutate(!!sym(rank):=taxon_group, n_locus=0, prop_locus=0)
+                                    mutate(!!sym(rank):=taxon_group, n_locus=0, n_locus_weighted=0, prop_locus=0, prop_locus_weighted=0)
             }
 
             # update the data.frame
             df_hit_group <- df_hit_group %>%
                                 rename("n_{rank}" := n_locus,
-                                        "prop_{rank}" := prop_locus)
+                                       "n_{rank}_weighted" := n_locus_weighted, 
+                                       "prop_{rank}" := prop_locus,
+                                       "prop_{rank}_weighted" := prop_locus_weighted)
 
             if (is.null(df_match_hit)) {
                 df_match_hit <- df_hit_group
@@ -252,19 +272,24 @@ log4r::info(fn_logger, "Finished!")
 for (rank in params$taxonomic_rank) {
     # output data.frame
     df_level_wide <- NULL
+    df_level_wide_weighted <- NULL
 
     # iterate over number of neighbours
     for (n in params$n_neighbour) {
         # open output files
         fn_best_hits <- file.path(currentdir, paste0("besthits_", n, "neighbours.tsv"))
+        fn_best_hits_weighted <- file.path(currentdir, paste0("besthits_weighted_", n, "neighbours.tsv"))
         fn_eff <- file.path(currentdir, paste0("eff_", n, "neighbours.tsv"))
 
         df_best_hits <- data.table::fread(fn_best_hits)
+        df_best_hits_weighted <- data.table::fread(fn_best_hits_weighted)
         df_eff <- data.table::fread(fn_eff)
 
         # extract the proportion and effective number of categories
         prop_rank <- paste0("prop_", rank)
+        prop_rank_weighted <- paste0("prop_", rank, "_weighted")
         eff_rank <- paste0("eff_", rank)
+        eff_rank_weighted <- paste0("eff_", rank, "_weighted")
 
         df_sub <- df_best_hits %>%
                     select(tips, !!sym(rank), !!sym(prop_rank)) %>%
@@ -273,11 +298,20 @@ for (rank in params$taxonomic_rank) {
                            "prop_n{n}" := !!sym(prop_rank),
                            "eff_n{n}" := !!sym(eff_rank))
 
+        df_sub_weighted <- df_best_hits_weighted %>%
+                            select(tips, !!sym(rank), !!sym(prop_rank_weighted)) %>%
+                            left_join(df_eff %>% select(tips, !!sym(eff_rank_weighted)), by="tips") %>%
+                            rename("taxon_n{n}" := !!sym(rank),
+                                   "prop_n{n}" := !!sym(prop_rank_weighted),
+                                   "eff_n{n}" := !!sym(eff_rank_weighted))
+
         # update the output data.frame
-        if (is.null(df_level_wide)) {
+        if (is.null(df_level_wide) && is.null(df_level_wide_weighted)) {
             df_level_wide <- df_sub
+            df_level_wide_weighted <- df_sub_weighted
         } else {
             df_level_wide <- merge(df_level_wide, df_sub, by="tips", all=TRUE)
+            df_level_wide_weighted <- merge(df_level_wide_weighted, df_sub_weighted, by="tips", all=TRUE)
         }
     }
 
@@ -287,8 +321,10 @@ for (rank in params$taxonomic_rank) {
         ordered_cols <- c(ordered_cols, paste0("taxon_n",n), paste0("prop_n",n), paste0("eff_n",n))
     }
     df_level_wide <- df_level_wide %>% select(all_of(ordered_cols))
+    df_level_wide_weighted <- df_level_wide_weighted %>% select(all_of(ordered_cols))
 
-    cat("\n\n## Taxonomic rank:", rank, "\n\n")
+    cat("\n\n## Taxonomic rank:", rank)
+    cat("\n\n### Unweighted:", "\n\n")
 
     # create top header for the data.frame
     header_top <- c(" " = 1)
@@ -301,6 +337,16 @@ for (rank in params$taxonomic_rank) {
 
     # create output data.frame
     html_tabel <- knitr::kable(df_level_wide, col.names=col_labels, format="html", escape=FALSE) %>%
+                    kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=TRUE) %>%
+                    add_header_above(header_top) %>%
+                    scroll_box(height="400px", width="100%")
+
+    print(html_tabel)
+
+    cat("\n\n### Weighted:", "\n\n")
+
+    # create output data.frame
+    html_tabel <- knitr::kable(df_level_wide_weighted, col.names=col_labels, format="html", escape=FALSE) %>%
                     kable_styling(bootstrap_options=c("striped", "hover", "condensed"), full_width=TRUE) %>%
                     add_header_above(header_top) %>%
                     scroll_box(height="400px", width="100%")
