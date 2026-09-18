@@ -30,7 +30,7 @@ if (length(ls_trees)<1) {
 
 # open list of tips
 ls_tips_check <- c()
-if (file.exists(params$file_list_tips) & params$file_list_tips!="") {
+if (file.exists(params$file_list_tips) && params$file_list_tips!="") {
     ls_tips_check <- readLines(params$file_list_tips)
 
     if (length(ls_tips_check)<1) {
@@ -61,6 +61,7 @@ if (!params$keep_ties) {
 
 # iterate over gene trees
 df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_closest_group") %dopar% {
+    require(ape)
     require(dplyr)
 
     # extract locus name
@@ -103,6 +104,12 @@ df_all_hits <- foreach(fn_tree = ls_trees, .combine='rbind', .export="f_extract_
 }
 
 stopCluster(nwcl)
+
+# check if output data.frame is NULL
+if (is.null(df_all_hits) || nrow(df_all_hits)==0) {
+  log4r::error(fn_logger, "Error: no hits found. Exited.")
+  knitr::knit_exit()
+}
 
 # extract list of tips
 for (tip in unique(df_all_hits$tips)) {
